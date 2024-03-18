@@ -67,3 +67,11 @@ tests - This folder has the test scripts that will be used to test the policies 
 #### .ps-rule
 
 .ps-rule - This repo uses PSRule to test the policies. This folder contains the PSRule configuration file that will be used to test the policies before they are getting deployed. This tool is meant to apply principals of Azure Well-Architected Framework to your workloads. This tool leverages over 400 pre-built rules to test Azure resources and checks your code against Azure infrastructure best practices. As a result, it provides feedback on how to improve your Infrastructure as Code.
+
+## References
+
+PS Rule - For details about how to implement , review the documentation [here](https://azure.github.io/PSRule.Rules.Azure/).
+
+Blog by Tao Yang - [Testing Bicep Code Using PSRule in Azure Pipeline](https://blog.tyang.org/2022/03/20/azure-pipeline-psrule-bicep-test).
+
+Azure Policy as Code - [Design Azure Policy as Code workflows](https://learn.microsoft.com/en-us/azure/governance/policy/concepts/policy-as-code)
