@@ -1,0 +1,51 @@
+name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - pipelines/*
+      - bicep/*
+pr:
+  branches:
+    include:
+      - main
+      - feature/*
+      - fix/*
+
+# name: Deploy Azure Policies
+
+variables:
+  vmImageName: "windows-latest"
+  location: "eastus2"
+
+pool:
+  vmImage: $(vmImageName)
+
+stages:
+  - stage: Build_And_Test
+    displayName: "Test and Build"
+    variables:
+      - name: PSRULE_CONFIGURATION_AZURE_BICEP_FILE_EXPANSION
+        value: true
+      - name: PSRULE_INPUT_PATHIGNORE
+        value: bicepconfig.json;modules/
+    jobs:
+      # Lint Bicep file
+      - template: pipelines/test-and-validate.yaml
+        parameters:
+          templateName: "subscription"
+          templateFileDirectory: "./bicep"
+          azureServiceConnection: "SC-fromDevops" # TODO: Replace with your service connection name
+          agentPoolName: "$(vmImageName)"
+          psRuleBaselineName: "Azure.Default"
+          azureLocation: "$(location)"
+          templateScope: "subscription"
+          runBicepLinter: true
+          runTemplateValidation: true
+          runWhatIfTests: true
+          runPSRuleTests: true
+
+  # Deploy To Azure Subscription
+  - template: pipelines/deploy-policies.yaml

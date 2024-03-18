@@ -1,0 +1,85 @@
+stages:
+  # Validate Bicep Code to make sure there are no errors
+  - stage: Validate
+    displayName: Validate
+    jobs:
+      - job: ValidateBicepCode
+        displayName: Validate Bicep code
+        variables:
+          - group: LZ-Policies # TODO: Replace with your variable group name from the pipelines library
+        steps:
+          - task: AzureCLI@2
+            name: RunPreflightValidation
+            displayName: Run preflight validation
+            inputs:
+              azureSubscription: SC-fromDevops # TODO: Replace with your service connection name
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub validate \
+                  -l $(location) \
+                  --template-file bicep/main.bicep
+  # Run What-If to see what will be the changes if the policy is deployed
+  - stage: Preview
+    displayName: Preview
+    jobs:
+      - job: PreviewPolicyDefinition
+        displayName: Preview Policy Definition
+        variables:
+          - group: LZ-Policies # TODO: Replace with your variable group name from the pipelines library
+        steps:
+          - task: AzureCLI@2
+            name: RunDeployment
+            displayName: Run deployment
+            inputs:
+              azureSubscription: SC-fromDevops # TODO: Replace with your service connection name
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub what-if \
+                  -l $(location) \
+                  --template-file bicep/main.bicep
+    # Deploy the policy definition with approval after previous steps are successful
+  - stage: Deploy
+    displayName: Deploy
+    jobs:
+      - job: DeployPolicyDefinition
+        displayName: Deploy Policy Definition
+        steps:
+          - task: AzureCLI@2
+            name: RunDeployment
+            displayName: Run deployment
+            inputs:
+              azureSubscription: SC-fromDevops # TODO: Replace with your service connection name
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub create \
+                  -l $(location) \
+                  --template-file bicep/main.bicep \
+
+  # Test the deployment
+  - stage: IntegrationTest
+    displayName: IntegrationTest
+    jobs:
+      - job: TestPoliciesEffect
+        displayName: Test_Policies_Effect
+        steps:
+          - task: AzurePowerShell@5
+            name: TestingPolicies
+            displayName: Running Tests on Policies
+            inputs:
+              azureSubscription: SC-fromDevops # TODO: Replace with your service connection name
+              ScriptType: "InlineScript"
+              Inline: |
+                $container = New-PesterContainer -Path 'tests/Pester.ps1'
+                Invoke-Pester -Container $container -CI
+              azurePowerShellVersion: "LatestVersion"
+          # Publish the test results
+          - task: PublishTestResults@2
+            name: PublishTestResults
+            displayName: Publish test results
+            condition: always()
+            inputs:
+              testResultsFormat: NUnit
+              testResultsFiles: "testResults.xml"

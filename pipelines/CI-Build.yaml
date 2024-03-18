@@ -1,0 +1,21 @@
+trigger:
+  - none
+
+name: CI-Build Azure Policies
+
+variables:
+  vmImageName: "windows-latest"
+
+pool:
+  vmImage: $(vmImageName)
+
+stages:
+  - stage: CI_Build
+    jobs:
+      - job: BuildCode
+        displayName: Build Code
+        steps:
+          - script: |
+              az bicep build --file bicep/main.bicep
+            name: CheckPolicyDefinitionBicepCode
+            displayName: Run Bicep linter

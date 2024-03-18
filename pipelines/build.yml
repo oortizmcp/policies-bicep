@@ -1,0 +1,23 @@
+jobs:
+  - job: PublishBuildArtifacts
+    displayName: "Publish artifacts in pipeline"
+    steps:
+      - script: |
+          az bicep build --file bicep/main.bicep
+        name: LintBicepCode
+        displayName: Run Bicep linter
+
+      - task: CopyFiles@2
+        displayName: "Copy Infra templates"
+        inputs:
+          Contents: |
+            bicep\**\*.bicep
+            bicep\**\*.json
+          targetFolder: "$(Build.ArtifactStagingDirectory)/bicep/"
+
+      - task: PublishBuildArtifacts@1
+        displayName: "Publish artifact in pipeline"
+        inputs:
+          PathtoPublish: "$(Build.ArtifactStagingDirectory)/bicep/"
+          ArtifactName: "infra"
+          publishLocation: "Container"
